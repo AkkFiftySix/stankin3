@@ -36,8 +36,9 @@ namespace stankin3.Job
                     using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
                     {
                         var records = csv.GetRecords<CurrentRate>().ToArray();
-                        var rate = records.First(r => r.Code == "USD").Rate;
-                        await _context.Rates.AddAsync(new Rate { Date = DateTime.Now, Value = rate });
+                        var rateUsd = records.First(r => r.Code == "USD").Rate;
+                        var rateIls = records.First(r => r.Code == "ILS").Rate;
+                        await _context.Rates.AddAsync(CreateNewRate(records));
                         await _context.SaveChangesAsync();
                     }
                 }
@@ -47,6 +48,18 @@ namespace stankin3.Job
             {
                 _logger.LogError("Job error");
             }
+        }
+
+        static Rate CreateNewRate(CurrentRate[] records)
+        {
+            var newRate = new Rate { Date = DateTime.Now };
+
+            foreach (var propName in typeof(Rate).GetProperties().Select(p => p.Name).Where(s => s != "Date"))
+            {
+                newRate?.GetType()?.GetProperty(propName)?.SetValue(newRate, records.First(r => r.Code == propName).Rate);
+            }
+
+            return newRate;
         }
     }
 }

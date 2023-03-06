@@ -95,7 +95,7 @@ public class Stankin3Controller : ControllerBase
     }
 
     [HttpGet("get-stats")]
-    public async Task<ActionResult<RateStats>> GetStats(string minDateStr, string maxDateStr)
+    public async Task<ActionResult<RateStats>> GetStats(string minDateStr, string maxDateStr, string currencyCode)
     {
         try
         {
@@ -110,13 +110,19 @@ public class Stankin3Controller : ControllerBase
             if (rates.Count == 0)
                 return Problem("No data");
 
+            static double GetPropValue(object src, string propName)
+            {
+                double.TryParse(src?.GetType()?.GetProperty(propName)?.GetValue(src, null)?.ToString(), out var res);
+                return res;
+            }
+
             return new RateStats
             {
                 MinDate = rates.Min(r => r.Date).ToString("dd.MM.yyyy"),
                 MaxDate = rates.Max(r => r.Date).ToString("dd.MM.yyyy"),
-                AverageValue = rates.Average(r => r.Value),
-                MaxValue = rates.Min(r => r.Value),
-                MinValue = rates.Max(r => r.Value)
+                AverageValue = rates.Average(r => GetPropValue(r, currencyCode)),
+                MaxValue = rates.Min(r => GetPropValue(r, currencyCode)),
+                MinValue = rates.Max(r => GetPropValue(r, currencyCode))
             };
         }
         catch (Exception e)
@@ -124,4 +130,7 @@ public class Stankin3Controller : ControllerBase
             return Problem(e.Message);
         }
     }
+
+    [HttpGet("get-currencies-codes")]
+    public ActionResult<string[]> GetÑurrenciesÑodes() => typeof(Rate).GetProperties().Select(p => p.Name).Where(s => s != "Date").ToArray();
 }

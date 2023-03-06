@@ -9,5 +9,7 @@ public class Rate
     [Format("dd.MM.yyyy")]
     public DateTime Date { get; set; }
     [Name("1 USD")]
-    public double Value { get; set; }
+    public double USD { get; set; }
+    [Name("1 ILS")]
+    public double ILS { get; set; }
 }
