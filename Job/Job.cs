@@ -56,7 +56,8 @@ namespace stankin3.Job
 
             foreach (var propName in typeof(Rate).GetProperties().Select(p => p.Name).Where(s => s != "Date"))
             {
-                newRate?.GetType()?.GetProperty(propName)?.SetValue(newRate, records.First(r => r.Code == propName).Rate);
+                var record = records.First(r => r.Code == propName);
+                newRate.GetType().GetProperty(propName).SetValue(newRate, record.Rate / record.Amount);
             }
 
             return newRate;

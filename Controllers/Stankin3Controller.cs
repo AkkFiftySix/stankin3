@@ -1,4 +1,5 @@
 using CsvHelper;
+using CsvHelper.Configuration.Attributes;
 using Hangfire;
 using Hangfire.Storage;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,17 @@ public class Stankin3Controller : ControllerBase
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 var records = csv.GetRecords<Rate>().ToArray();
+
+                foreach(var record in records)
+                {
+                    foreach (var propName in typeof(Rate).GetProperties().Select(p => p.Name).Where(s => s != "Date"))
+                    {
+                        var prop = record.GetType().GetProperty(propName);
+                        var amount = int.Parse(((NameAttribute[])prop.GetCustomAttributes(typeof(NameAttribute), false))[0].Names[0].Split(' ')[0]);
+                        prop.SetValue(record, double.Parse(record.GetType().GetProperty(propName).GetValue(record).ToString()) / amount);
+                    }
+                }
+
                 await _context.Rates.AddRangeAsync(records);
                 await _context.SaveChangesAsync();
             }
@@ -110,11 +122,7 @@ public class Stankin3Controller : ControllerBase
             if (rates.Count == 0)
                 return Problem("No data");
 
-            static double GetPropValue(object src, string propName)
-            {
-                double.TryParse(src?.GetType()?.GetProperty(propName)?.GetValue(src, null)?.ToString(), out var res);
-                return res;
-            }
+            static double GetPropValue(object src, string propName) => double.Parse(src.GetType().GetProperty(propName).GetValue(src, null).ToString());
 
             return new RateStats
             {
